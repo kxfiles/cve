@@ -14,9 +14,7 @@ export const prisma =
   new PrismaClient({
     datasources: {
       db: {
-        url: process.env.DATABASE_URL?.startsWith('file:') 
-               ? process.env.DATABASE_URL 
-               : fallbackUrl,
+        url: fallbackUrl,
       },
     },
   });
