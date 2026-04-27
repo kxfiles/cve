@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
-import { pollVulnerabilities } from '../lib/autonomous/cve-sentinel';
+import { prisma } from '../lib/prisma';
 import { generateNarration } from '../services/narration';
-
-const prisma = new PrismaClient();
+import { generateSpeech } from './voice';
 
 export async function produceVideo(cveId: string) {
   const cve = await prisma.cve.findUnique({
@@ -15,29 +13,48 @@ export async function produceVideo(cveId: string) {
   const project = await prisma.project.create({
     data: {
       cveId: cve.cveId,
-      title: `Episode: ${cve.cveId}`,
+      title: `CVE Explained: ${cve.cveId}`,
       status: 'GENERATING'
     }
   });
 
   try {
-    // 2. Generate Narration Script
-    console.log(`[Producer] Generating script for ${cve.cveId}...`);
+    console.log(`[Producer] Generating viral script for ${cve.cveId}...`);
     const script = await generateNarration(cve);
 
-    // 3. Store script and initial assets
+    console.log(`[Producer] Generating audio for ${cve.cveId} slides...`);
+    const slideAssets = [];
+    for (let i = 0; i < script.slides.length; i++) {
+        const slide = script.slides[i];
+        const audioPath = await generateSpeech(slide.description, project.id, i.toString());
+        slideAssets.push({
+            ...slide,
+            audioPath
+        });
+    }
+
+    const assets = {
+      slides: slideAssets,
+      thumbnail: {
+        text: script.thumbnailText,
+        layout: 'V1_IMPACT'
+      }
+    };
+
     await prisma.project.update({
       where: { id: project.id },
       data: {
+        title: script.title,
         script: JSON.stringify(script),
-        assets: JSON.stringify(script.slides),
-        status: 'READY' // For now, we mark as ready when script is done
+        assets: JSON.stringify(assets),
+        status: 'READY'
       }
     });
 
-    console.log(`[Producer] Project ${project.id} is ready for rendering.`);
+    console.log(`[Producer] Autonomous production complete for ${cve.cveId}. Ready for Forge.`);
     return project.id;
   } catch (error) {
+    console.error(`[Producer] Production failed for ${cve.cveId}:`, error);
     await prisma.project.update({
       where: { id: project.id },
       data: { status: 'FAILED' }
@@ -45,3 +62,4 @@ export async function produceVideo(cveId: string) {
     throw error;
   }
 }
+

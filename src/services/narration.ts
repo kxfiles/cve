@@ -5,6 +5,7 @@ const API_KEY = process.env.OPENROUTER_API_KEY;
 
 export interface NarrationScript {
   title: string;
+  thumbnailText: string;
   hook: string;
   explanation: string;
   impact: string;
@@ -20,38 +21,36 @@ export interface NarrationScript {
 
 export async function generateNarration(cve: any): Promise<NarrationScript> {
   const prompt = `
-You are the scriptwriter for "CVE Explained", a YouTube channel that covers critical cybersecurity vulnerabilities with intense, dramatic, and educational flair.
+You are the world's leading cybersecurity content creator for the YouTube channel "CVE Explained". Your audience loves high-stakes, fast-paced, and technically accurate but dramatic breakdowns.
 
-Vulnerability Details:
+Vulnerability Target:
 CVE ID: ${cve.cveId}
 Title: ${cve.title}
-Description: ${cve.description}
-Source: ${cve.source}
+Raw Data: ${cve.description}
 
-Generate a high-intensity narration script for a 60-second video (Shorts format).
-The script should include:
-1. A dramatic hook.
-2. A technical explanation simplified for a general tech audience.
-3. The real-world impact.
-4. How to fix it.
+MISSION: Prepare a viral 60-second video script (Shorts/TikTok style).
+STYLE: Intense, Matrix-vibe, apocalyptic but educational.
 
-Also, provide a sequence of "Slides" for the video. Each slide needs a title, description, and a visual instruction (e.g., "Matrix rain background", "Red flashing alert", "Code snippet showing the overflow").
-
-Return the result as a raw JSON object matching this TypeScript interface:
-interface NarrationScript {
-  title: string;
-  hook: string;
-  explanation: string;
-  impact: string;
-  remediation: string;
-  outro: string;
-  slides: {
-    title: string;
-    description: string;
-    visualHint: string;
-    type: 'ALERT' | 'TECHNICAL' | 'IMPACT' | 'CODE' | 'OUTRO';
-  }[];
+Required JSON Structure:
+{
+  "title": "A short, clickbaity video title",
+  "thumbnailText": "3-4 punchy words for a thumbnail (e.g., 'YOUR PC IS VULNERABLE')",
+  "hook": "5 second high-energy intro sentence",
+  "explanation": "Clear, fast-paced technical breakdown of the exploit",
+  "impact": "The terrifying real-world consequences",
+  "remediation": "The exact steps to secure systems",
+  "outro": "Call to action: 'Patch now. Security is not optional.'",
+  "slides": [
+    {
+      "title": "Short slide header",
+      "description": "The exact words spoken during this slide",
+      "visualHint": "Instruction for the forge: e.g., 'Flashing red code', 'System failure overlay'",
+      "type": "ALERT | TECHNICAL | IMPACT | CODE | OUTRO"
+    }
+  ]
 }
+
+Only output the raw JSON. Use DeepSeek R1 reasoning to ensure the technical parts are correct while being engaging.
 `;
 
   try {

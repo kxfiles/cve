@@ -46,14 +46,35 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject }) => {
   const [loading, setLoading] = useState(true);
   const [polling, setPolling] = useState(false);
 
+  const [autopilot, setAutopilot] = useState(false);
+
   const fetchData = async () => {
     try {
       const [cveRes, projectRes] = await Promise.all([
         fetch('/api/cve'),
         fetch('/api/projects')
       ]);
-      setCves(await cveRes.json());
-      setProjects(await projectRes.json());
+
+      if (!cveRes.ok || !projectRes.ok) {
+        throw new Error("Failed to fetch data endpoints");
+      }
+
+      const cvesData = await cveRes.json();
+      const projectsData = await projectRes.json();
+      
+      setCves(cvesData);
+      setProjects(projectsData);
+
+      // Autopilot Logic: If any critical CVE exists without a project, produce it
+      if (autopilot) {
+        const unproduced = cvesData.filter((cve: any) => 
+          cve.severity >= 9 && !projectsData.some((p: any) => p.cveId === cve.cveId)
+        );
+        if (unproduced.length > 0) {
+          console.log(`[Autopilot] Triggering production for ${unproduced[0].cveId}`);
+          handleProduce(unproduced[0].cveId);
+        }
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -63,7 +84,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject }) => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+    // Refresh interval for autopilot
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
+  }, [autopilot]);
 
   const handlePoll = async () => {
     setPolling(true);
@@ -92,14 +116,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject }) => {
           </div>
           <p className="text-zinc-500 font-mono text-sm tracking-widest uppercase">Autonomous Version // Alpha 0.1</p>
         </div>
-        <button 
-          onClick={handlePoll}
-          disabled={polling}
-          className="flex items-center gap-2 bg-cyber-red/10 border border-cyber-red/30 px-6 py-3 rounded-none text-cyber-red hover:bg-cyber-red hover:text-white transition-all font-mono uppercase tracking-widest text-sm disabled:opacity-50"
-        >
-          <RefreshCw className={cn("w-4 h-4", polling && "animate-spin")} />
-          {polling ? 'Scanning...' : 'Start Scan'}
-        </button>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 bg-zinc-900 border border-cyber-border px-4 py-2">
+            <span className={cn("text-[10px] font-mono tracking-widest uppercase", autopilot ? "text-cyber-red" : "text-zinc-600")}>
+              {autopilot ? 'Autopilot Active' : 'Autopilot Offline'}
+            </span>
+            <button 
+              onClick={() => setAutopilot(!autopilot)}
+              className={cn(
+                "w-10 h-5 rounded-full transition-all relative",
+                autopilot ? "bg-cyber-red" : "bg-zinc-800"
+              )}
+            >
+              <div className={cn(
+                "absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-all",
+                autopilot ? "translate-x-5" : "translate-x-0"
+              )} />
+            </button>
+          </div>
+
+          <button 
+            onClick={handlePoll}
+            disabled={polling}
+            className="flex items-center gap-2 bg-cyber-red/10 border border-cyber-red/30 px-6 py-3 rounded-none text-cyber-red hover:bg-cyber-red hover:text-white transition-all font-mono uppercase tracking-widest text-sm disabled:opacity-50"
+          >
+            <RefreshCw className={cn("w-4 h-4", polling && "animate-spin")} />
+            {polling ? 'Scanning...' : 'Start Scan'}
+          </button>
+        </div>
       </header>
 
       {/* Grid Layout */}

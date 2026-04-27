@@ -31,6 +31,7 @@ const Studio: React.FC<StudioProps> = ({ projectId, onBack }) => {
         const found = data.find((p: any) => p.id === projectId);
         if (found) {
           found.scriptJson = found.script ? JSON.parse(found.script) : null;
+          found.assetsJson = found.assets ? JSON.parse(found.assets) : null;
           setProject(found);
         }
       } catch (err) {
@@ -109,12 +110,30 @@ const Studio: React.FC<StudioProps> = ({ projectId, onBack }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-cyber-red" />
-              <h2 className="text-xs font-mono font-bold uppercase tracking-widest">Master Render Preview</h2>
+              <h2 className="text-xs font-mono font-bold uppercase tracking-widest">Autonomous Assets</h2>
             </div>
           </div>
 
-          <div className="flex-1 flex items-center justify-center">
-            <VideoPreview title={project.cveId} subtitle={script?.title || 'Telemonitoring...'} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            {/* Short Preview */}
+            <div className="space-y-4">
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block">Master Short (9:16)</span>
+              <VideoPreview cveId={project.cveId} title={script?.title || 'Telemonitoring...'} slides={project.assetsJson?.slides || script?.slides || []} />
+            </div>
+
+            {/* Thumbnail Preview */}
+            <div className="space-y-4">
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block">YouTube Thumbnail (16:9)</span>
+              <div className="aspect-video w-full border border-cyber-border bg-black relative">
+                 <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-[9px] font-mono text-cyber-red animate-pulse uppercase">Rendering AI Thumbnail...</span>
+                 </div>
+                 {/* This would be another canvas component in a full impl */}
+                 <div className="absolute bottom-4 right-4 bg-cyber-red text-white text-[10px] px-2 py-1 uppercase font-bold">
+                    Generated: {script?.thumbnailText}
+                 </div>
+              </div>
+            </div>
           </div>
           
           <div className="grid grid-cols-4 gap-4 mt-auto">
