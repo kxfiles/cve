@@ -1,0 +1,34 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Cve {
+  id          String   @id @default(cuid())
+  cveId       String   @unique
+  source      String   // NVD, CISA, etc.
+  severity    Float
+  title       String
+  description String
+  publishedAt DateTime
+  isProduced  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  projects    Project[]
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  cveId       String
+  cve         Cve      @relation(fields: [cveId], references: [cveId])
+  status      String   @default("DRAFT") // DRAFT, GENERATING, READY, FAILED
+  title       String
+  script      String?
+  assets      String?  // JSON serialized assets (slides, scenes)
+  videoUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

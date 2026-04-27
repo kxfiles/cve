@@ -1,0 +1,6 @@
+{
+  "name": "CVE Explained Studio",
+  "description": "Autonomous cybersecurity video production hub. Discovers vulnerabilities, generates narration, and renders high-quality video assets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
