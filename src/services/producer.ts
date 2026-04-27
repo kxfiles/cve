@@ -57,7 +57,10 @@ export async function produceVideo(cveId: string) {
     console.error(`[Producer] Production failed for ${cve.cveId}:`, error);
     await prisma.project.update({
       where: { id: project.id },
-      data: { status: 'FAILED' }
+      data: { 
+        status: 'FAILED',
+        errorReason: error instanceof Error ? error.message : String(error)
+      }
     });
     throw error;
   }

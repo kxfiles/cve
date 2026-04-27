@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.28.0",
+    "@google/genai": "^1.50.1",
     "@heroicons/react": "^2.2.0",
     "@prisma/client": "^6.19.3",
     "@tailwindcss/vite": "^4.2.4",

@@ -9,10 +9,12 @@ import {
   AlertTriangle,
   Code,
   Eye,
-  MessageSquareQuote
+  MessageSquareQuote,
+  MonitorPlay // Replaced Youtube with MonitorPlay
 } from 'lucide-react';
 import { NarrationScript } from '../services/narration';
 import VideoPreview from './VideoPreview';
+import { ThumbnailPreview } from './ThumbnailPreview'; // Import the new ThumbnailPreview
 
 interface StudioProps {
   projectId: string;
@@ -41,7 +43,14 @@ const Studio: React.FC<StudioProps> = ({ projectId, onBack }) => {
       }
     };
     fetchProject();
-  }, [projectId]);
+    
+    const interval = setInterval(() => {
+      if (project?.status !== 'READY' && project?.status !== 'FAILED') {
+        fetchProject();
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [projectId, project?.status]);
 
   if (loading) return <div className="p-20 text-center font-mono animate-pulse">Initializing Studio Metadata...</div>;
   if (!project) return <div className="p-20 text-center font-mono">Project not found.</div>;
@@ -63,10 +72,7 @@ const Studio: React.FC<StudioProps> = ({ projectId, onBack }) => {
         </div>
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-3 py-1.5 border border-cyber-border text-xs font-mono uppercase hover:bg-zinc-800 transition-all">
-            <Share2 className="w-3.5 h-3.5" /> Export
-          </button>
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-cyber-red text-xs font-mono uppercase hover:bg-red-700 transition-all">
-            <Download className="w-3.5 h-3.5" /> Render MP4
+            <Share2 className="w-3.5 h-3.5" /> Export All
           </button>
         </div>
       </div>
@@ -117,33 +123,78 @@ const Studio: React.FC<StudioProps> = ({ projectId, onBack }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
             {/* Short Preview */}
             <div className="space-y-4">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block">Master Short (9:16)</span>
+              <div className="flex flex-col gap-1">
+                 <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block">Master Short (9:16)</span>
+                 <span className="text-[9px] font-mono text-cyber-red italic">Click 'Export Video' to render MP4/WebM to disk</span>
+              </div>
               <VideoPreview cveId={project.cveId} title={script?.title || 'Telemonitoring...'} slides={project.assetsJson?.slides || script?.slides || []} />
             </div>
 
             {/* Thumbnail Preview */}
             <div className="space-y-4">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block">YouTube Thumbnail (16:9)</span>
-              <div className="aspect-video w-full border border-cyber-border bg-black relative">
-                 <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-[9px] font-mono text-cyber-red animate-pulse uppercase">Rendering AI Thumbnail...</span>
-                 </div>
-                 {/* This would be another canvas component in a full impl */}
-                 <div className="absolute bottom-4 right-4 bg-cyber-red text-white text-[10px] px-2 py-1 uppercase font-bold">
-                    Generated: {script?.thumbnailText}
-                 </div>
+              <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest block">YouTube Thumbnail (16:9)</span>
+                  <span className="text-[9px] font-mono text-cyber-red italic">Hover & Click to download PNG overlay</span>
               </div>
+              {script?.thumbnailText ? (
+                 <ThumbnailPreview cveId={project.cveId} headline={script.thumbnailText} />
+              ) : (
+                  <div className="aspect-video w-full border border-cyber-border bg-black relative">
+                     <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-[9px] font-mono text-cyber-red animate-pulse uppercase">Rendering AI Thumbnail...</span>
+                     </div>
+                  </div>
+              )}
             </div>
           </div>
           
-          <div className="grid grid-cols-4 gap-4 mt-auto">
-            {script?.slides.map((slide, idx) => (
-              <div key={idx} className="border border-cyber-border p-2 bg-cyber-gray/20 text-[10px] space-y-1">
-                <span className="text-cyber-red font-bold">SLIDE {idx + 1}</span>
-                <p className="truncate text-zinc-500 uppercase">{slide.title}</p>
+          {project.status === 'READY' && script && (
+            <div className="mt-12 border border-cyber-border bg-black p-6">
+              <h3 className="text-cyber-red font-mono font-bold uppercase mb-4 flex items-center gap-2">
+                <MonitorPlay className="w-5 h-5"/> Auto-Publish Toolkit
+              </h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block mb-1">YouTube Title</label>
+                    <input 
+                      readOnly 
+                      value={script.title} 
+                      className="w-full bg-zinc-900 border border-cyber-border p-3 text-white font-mono text-xs focus:outline-none" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block mb-1">YouTube Description</label>
+                    <textarea 
+                      readOnly 
+                      rows={8} 
+                      value={`${script.hook}\n\nWhat happened?\n${script.explanation}\n\nImpact:\n${script.impact}\n\nFix it:\n${script.remediation}\n\n#CyberSecurity #CVE #${project.cveId.replace('-', '')} #InfoSec #CyberShorts`} 
+                      className="w-full bg-zinc-900 border border-cyber-border p-3 text-white font-mono text-xs focus:outline-none resize-none" 
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex flex-col justify-center border border-dashed border-cyber-border p-6 bg-cyber-red/5">
+                  <div className="text-sm font-mono text-zinc-300 space-y-4 text-center">
+                    <h4 className="text-white font-bold uppercase border-b border-cyber-border pb-2 inline-block">Publishing Workflow</h4>
+                    <ul className="space-y-3 text-xs text-left inline-block mt-4 font-mono w-full">
+                      <li className="flex items-center gap-2 w-full"><div className="bg-cyber-red w-4 h-4 flex items-center justify-center text-white text-[9px] font-bold">1</div> Download Thumbnail PNG</li>
+                      <li className="flex items-center gap-2 w-full"><div className="bg-cyber-red w-4 h-4 flex items-center justify-center text-white text-[9px] font-bold">2</div> Export full video to MP4/WebM</li>
+                      <li className="flex items-center gap-2 w-full"><div className="bg-cyber-red w-4 h-4 flex items-center justify-center text-white text-[9px] font-bold">3</div> Copy metadata to clipboard</li>
+                      <li className="flex items-center gap-2 w-full"><div className="bg-cyber-red w-4 h-4 flex items-center justify-center text-white text-[9px] font-bold">4</div> Upload & Publish!</li>
+                    </ul>
+                  </div>
+                  <button 
+                    onClick={() => window.open('https://studio.youtube.com/', '_blank')} 
+                    className="mt-8 bg-cyber-red hover:bg-cyber-red text-white py-4 px-6 font-mono font-bold uppercase tracking-widest hover:bg-red-600 transition-colors w-full flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(255,0,0,0.3)]"
+                  >
+                    <MonitorPlay className="w-5 h-5"/> Launch YouTube Studio
+                  </button>
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Right: Technical Inspector */}
@@ -156,28 +207,16 @@ const Studio: React.FC<StudioProps> = ({ projectId, onBack }) => {
           <div className="space-y-4">
             <div className="space-y-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase">Production Engine</span>
-              <div className="text-[10px] font-mono border border-cyber-border p-2 bg-black">
-                PUPPETEER_FORGE_V1
+              <div className="text-[10px] font-mono border border-cyber-border p-2 bg-black text-cyber-red line-clamp-1">
+                FORGE_V1 + CANV_REC
               </div>
             </div>
             <div className="space-y-1">
               <span className="text-[9px] font-mono text-zinc-600 uppercase">Voice Profile</span>
-              <div className="text-[10px] font-mono border border-cyber-border p-2 bg-black">
-                SYNTH_INTENSE_MALE_04
+              <div className="text-[10px] font-mono border border-cyber-border p-2 bg-black text-cyber-red">
+                SYNTH_TTS_GOOGLE_API
               </div>
             </div>
-            <div className="space-y-1">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase">BPM / Rhythm Sync</span>
-              <div className="text-[10px] font-mono border border-cyber-border p-2 bg-black">
-                128 BPM // AGGRESSIVE
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-6 border-t border-cyber-border">
-             <button className="w-full text-center border border-cyber-red/50 text-cyber-red py-2 font-mono text-[10px] uppercase hover:bg-cyber-red hover:text-white transition-all">
-                Regenerate AI Analysis
-             </button>
           </div>
         </div>
       </div>

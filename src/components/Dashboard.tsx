@@ -33,6 +33,7 @@ interface Project {
   cveId: string;
   status: string;
   title: string;
+  errorReason?: string;
   cve: Cve;
 }
 
@@ -223,7 +224,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject }) => {
                 <div key={project.id} className="border border-cyber-border p-4 space-y-3 bg-cyber-gray/30">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-mono font-bold text-cyber-red bg-cyber-red/10 px-2 py-0.5 border border-cyber-red/20">{project.cveId}</span>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5" title={project.errorReason || undefined}>
                       {project.status === 'READY' ? <CheckCircle2 className="w-3.4 h-3.4 text-green-500" /> : 
                        project.status === 'FAILED' ? <AlertCircle className="w-3.4 h-3.4 text-cyber-red" /> :
                        <Clock className="w-3.4 h-3.4 text-yellow-500 animate-pulse" />}
@@ -231,6 +232,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelectProject }) => {
                     </div>
                   </div>
                   <h4 className="text-xs font-bold uppercase truncate">{project.title}</h4>
+                  {project.status === 'FAILED' && project.errorReason && (
+                    <div className="text-[9px] font-mono text-cyber-red/80 line-clamp-2 bg-black/50 p-1 border border-cyber-red/20">
+                      ERR: {project.errorReason}
+                    </div>
+                  )}
                   <div className="pt-2 flex gap-2">
                     <button 
                       onClick={() => onSelectProject(project.id)}

@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  url      = "file:./dev.db"
 }
 
 model Cve {
@@ -29,6 +29,7 @@ model Project {
   script      String?
   assets      String?  // JSON serialized assets (slides, scenes)
   videoUrl    String?
+  errorReason String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

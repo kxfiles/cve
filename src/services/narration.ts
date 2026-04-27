@@ -1,7 +1,4 @@
-import axios from 'axios';
-
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const API_KEY = process.env.OPENROUTER_API_KEY;
+import { GoogleGenAI, Type } from '@google/genai';
 
 export interface NarrationScript {
   title: string;
@@ -50,28 +47,60 @@ Required JSON Structure:
   ]
 }
 
-Only output the raw JSON. Use DeepSeek R1 reasoning to ensure the technical parts are correct while being engaging.
+Only output the raw JSON.
 `;
 
   try {
-    const response = await axios.post(OPENROUTER_API_URL, {
-      model: 'deepseek/deepseek-r1:free', // Use R1 for deep reasoning
-      messages: [
-        { role: 'system', content: 'You are a cybersecurity expert and dramatic scriptwriter. Output ONLY raw JSON.' },
-        { role: 'user', content: prompt }
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY environment variable is missing.');
+    }
+    
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [
+        { role: 'user', parts: [{ text: prompt }] }
       ],
-      response_format: { type: 'json_object' }
-    }, {
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json'
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            thumbnailText: { type: Type.STRING },
+            hook: { type: Type.STRING },
+            explanation: { type: Type.STRING },
+            impact: { type: Type.STRING },
+            remediation: { type: Type.STRING },
+            outro: { type: Type.STRING },
+            slides: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  description: { type: Type.STRING },
+                  visualHint: { type: Type.STRING },
+                  type: { type: Type.STRING, enum: ['ALERT', 'TECHNICAL', 'IMPACT', 'CODE', 'OUTRO'] }
+                },
+                required: ['title', 'description', 'visualHint', 'type']
+              }
+            }
+          },
+          required: ['title', 'thumbnailText', 'hook', 'explanation', 'impact', 'remediation', 'outro', 'slides']
+        }
       }
     });
 
-    const content = response.data.choices[0].message.content;
+    const content = response.text();
+    if (!content) {
+      throw new Error('No content returned from AI');
+    }
     return JSON.parse(content);
   } catch (error) {
     console.error('[Narration] Failed to generate script:', error);
-    throw error;
+    throw new Error(\`Failed to generate narration script: \${error instanceof Error ? error.message : String(error)}\`);
   }
 }
